@@ -2,17 +2,22 @@
 
 {% load static %}
 {% load i18n %}
+{% load theme %}
 
 {% block title %}Dashboard - Analytics{% endblock title %}
 
 {% block vendor_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
 {% endblock vendor_css %}
 
 {% block vendor_js %}
 {{ block.super }}
 <script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 {% endblock vendor_js %}
 
 {% block page_js %}
@@ -24,17 +29,72 @@
 <!-- Welcome Section -->
 <div class="row mb-4">
   <div class="col-12">
-    <div class="card bg-primary text-white">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title mb-1">Welcome back, {{ request.user.username }}! 👋</h4>
+        <p class="mb-4">Here's what's happening with your store today.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center">
           <div>
-            <h4 class="text-white mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}! 👋</h4>
-            <p class="mb-0">Here's what's happening with your projects today.</p>
+            <h6 class="card-title mb-1">Total Revenue</h6>
+            <h4 class="mb-0">${{ total_revenue|floatformat:2 }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ revenue_growth }}% from last month
+            </small>
           </div>
-          <div class="avatar avatar-lg">
-            <div class="avatar-initial bg-white text-primary rounded-circle">
-              <i class="ri-user-line ri-2x"></i>
-            </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-primary">
+              <i class="bx bx-dollar"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Active Users</h6>
+            <h4 class="mb-0">{{ active_users }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ user_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-success">
+              <i class="bx bx-user"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Total Orders</h6>
+            <h4 class="mb-0">{{ total_orders }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ order_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-warning">
+              <i class="bx bx-shopping-bag"></i>
+            </span>
           </div>
         </div>
       </div>
@@ -42,148 +102,283 @@
   </div>
 </div>
 
-<div class="row gy-6">
-  <!-- Quick Stats -->
-  <div class="col-md-12 col-lg-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h5 class="card-title mb-0">Quick Stats</h5>
-          <div class="dropdown">
-            <button class="btn text-muted p-0" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              <i class="ri-more-2-line ri-24px"></i>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end">
-              <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
-              <a class="dropdown-item" href="javascript:void(0);">Share</a>
-              <a class="dropdown-item" href="javascript:void(0);">Update</a>
-            </div>
-          </div>
-        </div>
-        <div class="d-flex flex-column gap-4">
-          <div class="d-flex align-items-center">
-            <div class="avatar avatar-sm me-3">
-              <div class="avatar-initial bg-label-primary rounded">
-                <i class="ri-line-chart-line ri-24px"></i>
+<!-- Orders Management -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">Orders Management</h5>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOrderModal">
+      <i class="bx bx-plus"></i> Add Order
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover" id="ordersTable">
+        <thead>
+          <tr>
+            <th>Order Number</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr>
+            <td>{{ order.order_number }}</td>
+            <td>{{ order.customer.username }}</td>
+            <td>${{ order.amount }}</td>
+            <td>
+              <span class="badge bg-label-{{ order.status|lower }}">
+                {{ order.status }}
+              </span>
+            </td>
+            <td>{{ order.created_at|date:"M d, Y" }}</td>
+            <td>
+              <div class="d-inline-block">
+                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Edit">
+                  <i class="bx bx-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Delete">
+                  <i class="bx bx-trash"></i>
+                </button>
               </div>
-            </div>
-            <div>
-              <h6 class="mb-0">Total Revenue</h6>
-              <h4 class="mb-0">$42.8k</h4>
-              <small class="text-success">+28.14%</small>
-            </div>
-          </div>
-          <div class="d-flex align-items-center">
-            <div class="avatar avatar-sm me-3">
-              <div class="avatar-initial bg-label-success rounded">
-                <i class="ri-user-line ri-24px"></i>
-              </div>
-            </div>
-            <div>
-              <h6 class="mb-0">Active Users</h6>
-              <h4 class="mb-0">12.5k</h4>
-              <small class="text-success">+18.2%</small>
-            </div>
-          </div>
-          <div class="d-flex align-items-center">
-            <div class="avatar avatar-sm me-3">
-              <div class="avatar-initial bg-label-warning rounded">
-                <i class="ri-shopping-cart-line ri-24px"></i>
-              </div>
-            </div>
-            <div>
-              <h6 class="mb-0">Total Orders</h6>
-              <h4 class="mb-0">1.54k</h4>
-              <small class="text-danger">-8.4%</small>
-            </div>
-          </div>
-        </div>
-      </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
+</div>
 
-  <!-- Weekly Overview Chart -->
-  <div class="col-xl-8 col-md-6">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0">Weekly Overview</h5>
-        <div class="dropdown">
-          <button class="btn text-muted p-0" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <i class="ri-more-2-line ri-24px"></i>
-          </button>
-          <div class="dropdown-menu dropdown-menu-end">
-            <a class="dropdown-item" href="javascript:void(0);">Last 7 Days</a>
-            <a class="dropdown-item" href="javascript:void(0);">Last 30 Days</a>
-            <a class="dropdown-item" href="javascript:void(0);">Last 90 Days</a>
-          </div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div id="weeklyOverviewChart" class="mb-3"></div>
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h4 class="mb-0">45%</h4>
-            <p class="mb-0 text-muted">Your sales performance is 45% better compared to last month</p>
-          </div>
-          <button class="btn btn-primary">View Details</button>
-        </div>
-      </div>
+<!-- Users Management -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">Users Management</h5>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+      <i class="bx bx-plus"></i> Add User
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover" id="usersTable">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Total Orders</th>
+            <th>Total Spent</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+              <span class="badge bg-label-{{ user.profile.is_active|yesno:'success,danger' }}">
+                {{ user.profile.is_active|yesno:'Active,Inactive' }}
+              </span>
+            </td>
+            <td>{{ user.profile.total_orders }}</td>
+            <td>${{ user.profile.total_spent|floatformat:2 }}</td>
+            <td>
+              <div class="d-inline-block">
+                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Edit">
+                  <i class="bx bx-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Delete">
+                  <i class="bx bx-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
+</div>
 
-  <!-- Recent Transactions -->
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0">Recent Transactions</h5>
-        <button class="btn btn-primary btn-sm">View All</button>
+<!-- Revenue Management -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">Revenue Management</h5>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRevenueModal">
+      <i class="bx bx-plus"></i> Add Revenue
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover" id="revenueTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Total Revenue</th>
+            <th>Total Orders</th>
+            <th>Average Order Value</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for revenue in revenues %}
+          <tr>
+            <td>{{ revenue.date|date:"M d, Y" }}</td>
+            <td>${{ revenue.total_revenue|floatformat:2 }}</td>
+            <td>{{ revenue.total_orders }}</td>
+            <td>${{ revenue.average_order_value|floatformat:2 }}</td>
+            <td>
+              <div class="d-inline-block">
+                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Edit">
+                  <i class="bx bx-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Delete">
+                  <i class="bx bx-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Order Modal -->
+<div class="modal fade" id="addOrderModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Order</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Transaction</th>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <div class="d-flex align-items-center">
-                  <div class="avatar avatar-sm me-3">
-                    <img src="{% static 'img/avatars/1.png' %}" alt="Avatar" class="rounded-circle">
-                  </div>
-                  <div>
-                    <h6 class="mb-0">John Doe</h6>
-                    <small class="text-muted">@johndoe</small>
-                  </div>
-                </div>
-              </td>
-              <td>Payment for #1234</td>
-              <td>2024-03-20</td>
-              <td>$1,234.00</td>
-              <td><span class="badge bg-label-success">Completed</span></td>
-              <td>
-                <div class="dropdown">
-                  <button class="btn text-muted p-0" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="ri-more-2-line ri-24px"></i>
-                  </button>
-                  <div class="dropdown-menu dropdown-menu-end">
-                    <a class="dropdown-item" href="javascript:void(0);">View Details</a>
-                    <a class="dropdown-item" href="javascript:void(0);">Edit</a>
-                    <a class="dropdown-item text-danger" href="javascript:void(0);">Delete</a>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <!-- Add more transaction rows as needed -->
-          </tbody>
-        </table>
+      <form action="{% url 'add-order' %}" method="POST" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="form-label" for="customer">Customer</label>
+              <select class="form-select" id="customer" name="customer" required>
+                <option value="">Select Customer</option>
+                {% for user in users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="amount">Amount</label>
+              <input type="number" class="form-control" id="amount" name="amount" step="0.01" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="status">Status</label>
+              <select class="form-select" id="status" name="status" required>
+                <option value="">Select Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="PROCESSING">Processing</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="notes">Notes</label>
+              <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Save Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+      <form action="{% url 'add-user' %}" method="POST" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="form-label" for="username">Username</label>
+              <input type="text" class="form-control" id="username" name="username" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="email">Email</label>
+              <input type="email" class="form-control" id="email" name="email" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="phone">Phone</label>
+              <input type="tel" class="form-control" id="phone" name="phone" />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="address">Address</label>
+              <textarea class="form-control" id="address" name="address" rows="2"></textarea>
+            </div>
+            <div class="col-12 mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" checked />
+                <label class="form-check-label" for="is_active">Active</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Revenue Modal -->
+<div class="modal fade" id="addRevenueModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Revenue Record</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'add-revenue' %}" method="POST" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="form-label" for="date">Date</label>
+              <input type="date" class="form-control" id="date" name="date" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="total_revenue">Total Revenue</label>
+              <input type="number" class="form-control" id="total_revenue" name="total_revenue" step="0.01" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="total_orders">Total Orders</label>
+              <input type="number" class="form-control" id="total_orders" name="total_orders" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="average_order_value">Average Order Value</label>
+              <input type="number" class="form-control" id="average_order_value" name="average_order_value" step="0.01" required />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Save Revenue</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
