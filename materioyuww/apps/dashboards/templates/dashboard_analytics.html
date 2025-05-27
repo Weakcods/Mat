@@ -12,6 +12,219 @@
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
 <link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
+<style>
+  /* Custom styles for better visibility */
+  .action-buttons .btn {
+    padding: 0.4rem 0.6rem;
+    margin: 0 0.2rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+  }
+  
+  .action-buttons .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .btn-edit {
+    color: #696cff;
+    background-color: rgba(105, 108, 255, 0.1);
+    border-color: transparent;
+  }
+  
+  .btn-edit:hover {
+    color: #fff;
+    background-color: #696cff;
+  }
+  
+  .btn-delete {
+    color: #ff3e1d;
+    background-color: rgba(255, 62, 29, 0.1);
+    border-color: transparent;
+  }
+  
+  .btn-delete:hover {
+    color: #fff;
+    background-color: #ff3e1d;
+  }
+
+  /* Light mode specific styles */
+  [data-bs-theme="light"] .card {
+    background-color: #fff;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  [data-bs-theme="light"] .table {
+    color: #566a7f;
+  }
+
+  [data-bs-theme="light"] .table thead th {
+    background-color: #f5f5f9;
+    color: #566a7f;
+    font-weight: 600;
+  }
+
+  [data-bs-theme="light"] .table-hover tbody tr:hover {
+    background-color: #f5f5f9;
+  }
+
+  /* Dark mode specific styles */
+  [data-bs-theme="dark"] .card {
+    background-color: #2b2c40;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  [data-bs-theme="dark"] .table {
+    color: #a3a4cc;
+  }
+
+  [data-bs-theme="dark"] .table thead th {
+    background-color: #2b2c40;
+    color: #a3a4cc;
+    font-weight: 600;
+  }
+
+  [data-bs-theme="dark"] .table-hover tbody tr:hover {
+    background-color: #2b2c40;
+  }
+
+  /* Welcome section styles */
+  .welcome-content {
+    flex: 1;
+  }
+  
+  .welcome-stats {
+    background-color: rgba(105, 108, 255, 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+  
+  .stat-item {
+    padding: 0 1.5rem;
+    border-right: 1px solid rgba(105, 108, 255, 0.2);
+  }
+  
+  .stat-item:last-child {
+    border-right: none;
+  }
+  
+  .welcome-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Light mode specific styles */
+  [data-bs-theme="light"] .welcome-stats {
+    background-color: #f5f5f9;
+  }
+  
+  [data-bs-theme="light"] .stat-item {
+    border-right-color: #e0e0e0;
+  }
+  
+  /* Dark mode specific styles */
+  [data-bs-theme="dark"] .welcome-stats {
+    background-color: rgba(105, 108, 255, 0.1);
+  }
+  
+  [data-bs-theme="dark"] .stat-item {
+    border-right-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  @media (max-width: 768px) {
+    .welcome-stats {
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .stat-item {
+      border-right: none;
+      border-bottom: 1px solid rgba(105, 108, 255, 0.2);
+      padding: 0.5rem 0;
+    }
+    
+    .stat-item:last-child {
+      border-bottom: none;
+    }
+    
+    .welcome-actions {
+      flex-direction: column;
+      width: 100%;
+      margin-top: 1rem;
+    }
+    
+    .welcome-actions .btn {
+      width: 100%;
+    }
+  }
+
+  /* Status Badge Styles */
+  .status-badge {
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  .status-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .bg-label-pending {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    color: #ffc107 !important;
+  }
+  
+  .bg-label-processing {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+    color: #0dcaf0 !important;
+  }
+  
+  .bg-label-completed {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+    color: #198754 !important;
+  }
+  
+  .bg-label-cancelled {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    color: #dc3545 !important;
+  }
+  
+  /* Status Options Modal Styles */
+  .status-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .status-option {
+    padding: 1rem;
+    text-align: center;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  .status-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* Action Buttons Enhancement */
+  .action-buttons .btn {
+    padding: 0.5rem;
+    margin: 0 0.25rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+  }
+  
+  .action-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+</style>
 {% endblock vendor_css %}
 
 {% block vendor_js %}
@@ -35,8 +248,50 @@
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="card-title mb-1">Welcome back, {{ request.user.username }}! 👋</h4>
-        <p class="mb-4">Here's what's happening with your store today.</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="welcome-content">
+            <h4 class="card-title mb-1">
+              Welcome back, <span class="text-primary">{{ request.user.username }}</span>! 👋
+            </h4>
+            <p class="mb-0 text-muted">Here's what's happening with your store today.</p>
+          </div>
+          <div class="welcome-stats d-flex gap-3">
+            <div class="stat-item text-center">
+              <h6 class="mb-1">Today's Orders</h6>
+              <h4 class="mb-0 text-primary">{{ total_orders }}</h4>
+            </div>
+            <div class="stat-item text-center">
+              <h6 class="mb-1">Today's Revenue</h6>
+              <h4 class="mb-0 text-success">${{ total_revenue|floatformat:2 }}</h4>
+            </div>
+            <div class="stat-item text-center">
+              <h6 class="mb-1">Active Users</h6>
+              <h4 class="mb-0 text-warning">{{ active_users }}</h4>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center mb-1">
+                <i class="bx bx-calendar-check text-primary me-2"></i>
+                <span class="text-muted">Last updated: {{ now|date:"F d, Y H:i" }}</span>
+              </div>
+              <div class="d-flex align-items-center">
+                <i class="bx bx-trending-up text-success me-2"></i>
+                <span class="text-muted">Store performance is up by {{ revenue_growth_abs }}% this month</span>
+              </div>
+            </div>
+            <div class="welcome-actions">
+              <button class="btn btn-primary me-2">
+                <i class="bx bx-refresh me-1"></i> Refresh Data
+              </button>
+              <button class="btn btn-outline-primary">
+                <i class="bx bx-download me-1"></i> Export Report
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -57,8 +312,14 @@
           </div>
           <div class="avatar">
             <span class="avatar-initial rounded bg-label-primary">
-              <i class="bx bx-dollar"></i>
+              <i class="bx bx-dollar-circle fs-3"></i>
             </span>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="d-flex align-items-center">
+            <i class="bx bx-trending-up text-primary me-2"></i>
+            <small class="text-muted">Monthly Revenue</small>
           </div>
         </div>
       </div>
@@ -77,8 +338,14 @@
           </div>
           <div class="avatar">
             <span class="avatar-initial rounded bg-label-success">
-              <i class="bx bx-user"></i>
+              <i class="bx bx-user-check fs-3"></i>
             </span>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="d-flex align-items-center">
+            <i class="bx bx-group text-success me-2"></i>
+            <small class="text-muted">Total Users</small>
           </div>
         </div>
       </div>
@@ -97,8 +364,14 @@
           </div>
           <div class="avatar">
             <span class="avatar-initial rounded bg-label-warning">
-              <i class="bx bx-cart"></i>
+              <i class="bx bx-shopping-bag fs-3"></i>
             </span>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="d-flex align-items-center">
+            <i class="bx bx-package text-warning me-2"></i>
+            <small class="text-muted">Processed Orders</small>
           </div>
         </div>
       </div>
@@ -117,8 +390,14 @@
           </div>
           <div class="avatar">
             <span class="avatar-initial rounded bg-label-info">
-              <i class="bx bx-trending-up"></i>
+              <i class="bx bx-line-chart fs-3"></i>
             </span>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="d-flex align-items-center">
+            <i class="bx bx-trending-up text-info me-2"></i>
+            <small class="text-muted">Order Value Trend</small>
           </div>
         </div>
       </div>
@@ -191,17 +470,26 @@
             <td>{{ order.customer.username }}</td>
             <td>${{ order.amount|floatformat:2 }}</td>
             <td>
-              <span class="badge bg-label-{{ order.status|lower }}">
+              <span class="badge bg-label-{{ order.status|lower }} status-badge" 
+                    data-bs-toggle="tooltip" 
+                    title="Click to change status"
+                    onclick="showStatusOptions('{{ order.id }}', '{{ order.status }}')">
                 {{ order.status }}
               </span>
             </td>
             <td>{{ order.created_at|date:"M d, Y" }}</td>
             <td>
-              <div class="d-inline-block">
-                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Edit">
+              <div class="action-buttons">
+                <button class="btn btn-edit" 
+                        onclick="editOrder('{{ order.id }}')"
+                        data-bs-toggle="tooltip" 
+                        title="Edit Order">
                   <i class="bx bx-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Delete">
+                <button class="btn btn-delete" 
+                        onclick="deleteOrder('{{ order.id }}')"
+                        data-bs-toggle="tooltip" 
+                        title="Delete Order">
                   <i class="bx bx-trash"></i>
                 </button>
               </div>
@@ -250,11 +538,11 @@
             <td>{{ user.profile.total_orders }}</td>
             <td>${{ user.profile.total_spent|floatformat:2 }}</td>
             <td>
-              <div class="d-inline-block">
-                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Edit">
+              <div class="action-buttons">
+                <button class="btn btn-edit" data-bs-toggle="tooltip" title="Edit User">
                   <i class="bx bx-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Delete">
+                <button class="btn btn-delete" data-bs-toggle="tooltip" title="Delete User">
                   <i class="bx bx-trash"></i>
                 </button>
               </div>
@@ -295,11 +583,11 @@
             <td>{{ revenue.total_orders }}</td>
             <td>${{ revenue.average_order_value|floatformat:2 }}</td>
             <td>
-              <div class="d-inline-block">
-                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Edit">
+              <div class="action-buttons">
+                <button class="btn btn-edit" data-bs-toggle="tooltip" title="Edit Revenue">
                   <i class="bx bx-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-icon" data-bs-toggle="tooltip" title="Delete">
+                <button class="btn btn-delete" data-bs-toggle="tooltip" title="Delete Revenue">
                   <i class="bx bx-trash"></i>
                 </button>
               </div>
@@ -442,6 +730,26 @@
           <button type="submit" class="btn btn-primary">Save Revenue</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Status Options Modal -->
+<div class="modal fade" id="statusOptionsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Change Order Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="status-options">
+          <button class="btn btn-outline-primary status-option" data-status="pending">Pending</button>
+          <button class="btn btn-outline-info status-option" data-status="processing">Processing</button>
+          <button class="btn btn-outline-success status-option" data-status="completed">Completed</button>
+          <button class="btn btn-outline-danger status-option" data-status="cancelled">Cancelled</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

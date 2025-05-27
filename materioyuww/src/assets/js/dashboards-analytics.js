@@ -514,6 +514,22 @@ if (revenueChartEl) {
       type: 'area',
       toolbar: {
         show: false
+      },
+      zoom: {
+        enabled: true
+      },
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150
+        },
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350
+        }
       }
     },
     dataLabels: {
@@ -521,7 +537,8 @@ if (revenueChartEl) {
     },
     stroke: {
       curve: 'smooth',
-      width: 2
+      width: 3,
+      lineCap: 'round'
     },
     fill: {
       type: 'gradient',
@@ -529,7 +546,19 @@ if (revenueChartEl) {
         shadeIntensity: 0.8,
         opacityFrom: 0.7,
         opacityTo: 0.2,
-        stops: [0, 90, 100]
+        stops: [0, 90, 100],
+        colorStops: [
+          {
+            offset: 0,
+            color: '#696cff',
+            opacity: 1
+          },
+          {
+            offset: 100,
+            color: '#696cff',
+            opacity: 0.2
+          }
+        ]
       }
     },
     colors: ['#696cff'],
@@ -546,6 +575,9 @@ if (revenueChartEl) {
           fontSize: '13px',
           colors: '#a3a4cc'
         }
+      },
+      tooltip: {
+        enabled: false
       }
     },
     yaxis: {
@@ -557,6 +589,13 @@ if (revenueChartEl) {
           fontSize: '13px',
           colors: '#a3a4cc'
         }
+      },
+      title: {
+        text: 'Revenue ($)',
+        style: {
+          fontSize: '13px',
+          color: '#a3a4cc'
+        }
       }
     },
     grid: {
@@ -564,15 +603,61 @@ if (revenueChartEl) {
       padding: {
         top: -15,
         bottom: -10
+      },
+      xaxis: {
+        lines: {
+          show: true
+        }
+      },
+      yaxis: {
+        lines: {
+          show: true
+        }
       }
     },
     tooltip: {
       theme: 'dark',
+      x: {
+        format: 'dd MMM'
+      },
       y: {
         formatter: function (value) {
           return '$' + value.toLocaleString();
         }
+      },
+      marker: {
+        show: true
       }
+    },
+    markers: {
+      size: 5,
+      colors: ['#696cff'],
+      strokeColors: '#fff',
+      strokeWidth: 2,
+      hover: {
+        size: 7
+      }
+    },
+    annotations: {
+      points: [{
+        x: revenueData.indexOf(Math.max(...revenueData)),
+        y: Math.max(...revenueData),
+        marker: {
+          size: 6,
+          fillColor: '#fff',
+          strokeColor: '#696cff',
+          radius: 2
+        },
+        label: {
+          borderColor: '#696cff',
+          offsetY: 0,
+          style: {
+            color: '#fff',
+            background: '#696cff'
+          },
+          text: 'Peak'
+        }
+      }]
     }
   });
   revenueChart.render();
@@ -741,3 +826,138 @@ toastr.options = {
   positionClass: 'toast-top-right',
   timeOut: 3000
 };
+
+// Order Management Functions
+let currentOrderId = null;
+
+function showStatusOptions(orderId, currentStatus) {
+  currentOrderId = orderId;
+  const modal = new bootstrap.Modal(document.getElementById('statusOptionsModal'));
+  
+  // Remove active class from all options
+  document.querySelectorAll('.status-option').forEach(option => {
+    option.classList.remove('active');
+    if (option.dataset.status === currentStatus.toLowerCase()) {
+      option.classList.add('active');
+    }
+  });
+  
+  modal.show();
+}
+
+// Initialize status options
+document.addEventListener('DOMContentLoaded', function() {
+  const statusOptions = document.querySelectorAll('.status-option');
+  statusOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      const newStatus = this.dataset.status;
+      updateOrderStatus(currentOrderId, newStatus);
+    });
+  });
+});
+
+function updateOrderStatus(orderId, newStatus) {
+  $.ajax({
+    url: `/orders/${orderId}/update-status/`,
+    type: 'POST',
+    data: {
+      'status': newStatus,
+      'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+    },
+    success: function(response) {
+      if (response.status === 'success') {
+        // Update the badge in the table
+        const badge = document.querySelector(`[data-order-id="${orderId}"] .status-badge`);
+        badge.className = `badge bg-label-${newStatus.toLowerCase()} status-badge`;
+        badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        
+        // Close the modal
+        bootstrap.Modal.getInstance(document.getElementById('statusOptionsModal')).hide();
+        
+        // Show success message
+        toastr.success('Order status updated successfully');
+      } else {
+        toastr.error('Error updating order status');
+      }
+    },
+    error: function() {
+      toastr.error('Error updating order status');
+    }
+  });
+}
+
+function editOrder(orderId) {
+  // Fetch order details
+  $.ajax({
+    url: `/orders/${orderId}/`,
+    type: 'GET',
+    success: function(response) {
+      if (response.status === 'success') {
+        // Populate the edit modal with order details
+        const order = response.data;
+        $('#editOrderId').val(order.id);
+        $('#editOrderNumber').val(order.order_number);
+        $('#editCustomer').val(order.customer);
+        $('#editAmount').val(order.amount);
+        $('#editStatus').val(order.status);
+        
+        // Show the edit modal
+        const editModal = new bootstrap.Modal(document.getElementById('editOrderModal'));
+        editModal.show();
+      } else {
+        toastr.error('Error fetching order details');
+      }
+    },
+    error: function() {
+      toastr.error('Error fetching order details');
+    }
+  });
+}
+
+function deleteOrder(orderId) {
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it!',
+    customClass: {
+      confirmButton: 'btn btn-danger me-3',
+      cancelButton: 'btn btn-secondary'
+    },
+    buttonsStyling: false
+  }).then((result) => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: `/orders/${orderId}/delete/`,
+        type: 'POST',
+        data: {
+          'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+        },
+        success: function(response) {
+          if (response.status === 'success') {
+            // Remove the row from the table
+            $(`[data-order-id="${orderId}"]`).fadeOut(300, function() {
+              $(this).remove();
+            });
+            
+            // Show success message
+            Swal.fire({
+              icon: 'success',
+              title: 'Deleted!',
+              text: 'Order has been deleted.',
+              customClass: {
+                confirmButton: 'btn btn-success'
+              }
+            });
+          } else {
+            toastr.error('Error deleting order');
+          }
+        },
+        error: function() {
+          toastr.error('Error deleting order');
+        }
+      });
+    }
+  });
+}
