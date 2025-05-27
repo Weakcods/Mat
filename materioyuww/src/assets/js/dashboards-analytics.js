@@ -886,6 +886,7 @@ function updateOrderStatus(orderId, newStatus) {
   });
 }
 
+// Edit Order Function
 function editOrder(orderId) {
   // Fetch order details
   $.ajax({
@@ -913,6 +914,73 @@ function editOrder(orderId) {
     }
   });
 }
+
+// Handle Edit Order Form Submission
+$('#editOrderForm').on('submit', function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  const orderId = $('#editOrderId').val();
+
+  // Validate form data
+  if (!formData.get('order_number') || !formData.get('customer') || !formData.get('amount')) {
+    toastr.error('Please fill in all required fields');
+    return;
+  }
+
+  // Show loading state
+  const submitButton = $(this).find('button[type="submit"]');
+  const originalText = submitButton.html();
+  submitButton.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
+  submitButton.prop('disabled', true);
+
+  // Send update request
+  $.ajax({
+    url: `/orders/${orderId}/update/`,
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    success: function(response) {
+      if (response.status === 'success') {
+        // Close modal
+        $('#editOrderModal').modal('hide');
+        
+        // Show success message
+        toastr.success('Order updated successfully');
+        
+        // Update the row in the table
+        const order = response.data;
+        const row = $(`[data-order-id="${orderId}"]`);
+        
+        row.find('.order-number').text(order.order_number);
+        row.find('.customer').text(order.customer);
+        row.find('.amount').text('$' + parseFloat(order.amount).toFixed(2));
+        row.find('.status-badge')
+          .removeClass()
+          .addClass(`badge bg-label-${order.status.toLowerCase()} status-badge`)
+          .text(order.status);
+        
+        // Reset form
+        $('#editOrderForm')[0].reset();
+        $('#editOrderForm').removeClass('was-validated');
+      } else {
+        toastr.error(response.message || 'Error updating order');
+      }
+    },
+    error: function(xhr) {
+      if (xhr.responseJSON && xhr.responseJSON.message) {
+        toastr.error(xhr.responseJSON.message);
+      } else {
+        toastr.error('Error updating order');
+      }
+    },
+    complete: function() {
+      // Reset button state
+      submitButton.html(originalText);
+      submitButton.prop('disabled', false);
+    }
+  });
+});
 
 function deleteOrder(orderId) {
   Swal.fire({
