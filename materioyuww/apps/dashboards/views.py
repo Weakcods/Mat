@@ -4,8 +4,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Sum, Count, Avg
-from .models import Order, UserProfile, Revenue
+from .models import Order, UserProfile, Revenue, Shipment, Inventory, Delivery
 from .utils import TemplateLayout
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+import uuid
 
 
 """
@@ -45,10 +48,53 @@ class DashboardsView(TemplateView):
         total_orders = Order.objects.count()
         context['total_orders'] = total_orders
         
-        # Calculate growth percentages (you can implement your own logic here)
-        context['revenue_growth'] = 15  # Example value
-        context['user_growth'] = 10     # Example value
-        context['order_growth'] = 20    # Example value
+        # Calculate average order value
+        average_order_value = Order.objects.aggregate(avg=Avg('amount'))['avg'] or 0
+        context['average_order_value'] = average_order_value
+        
+        # Calculate growth percentages
+        last_month = timezone.now().replace(day=1) - timezone.timedelta(days=1)
+        
+        # Revenue growth
+        last_month_revenue = Revenue.objects.filter(date__lt=last_month).aggregate(total=Sum('total_revenue'))['total'] or 0
+        revenue_growth = ((total_revenue - last_month_revenue) / max(last_month_revenue, 1)) * 100
+        context['revenue_growth'] = round(revenue_growth, 2)
+        context['revenue_growth_abs'] = round(abs(revenue_growth), 2)
+        
+        # User growth - using last_login instead of created_at
+        last_month_users = UserProfile.objects.filter(last_login__lt=last_month).count()
+        user_growth = ((active_users - last_month_users) / max(last_month_users, 1)) * 100
+        context['user_growth'] = round(user_growth, 2)
+        context['user_growth_abs'] = round(abs(user_growth), 2)
+        
+        # Order growth
+        last_month_orders = Order.objects.filter(created_at__lt=last_month).count()
+        order_growth = ((total_orders - last_month_orders) / max(last_month_orders, 1)) * 100
+        context['order_growth'] = round(order_growth, 2)
+        context['order_growth_abs'] = round(abs(order_growth), 2)
+        
+        # AOV growth
+        last_month_aov = Order.objects.filter(created_at__lt=last_month).aggregate(avg=Avg('amount'))['avg'] or 0
+        aov_growth = ((average_order_value - last_month_aov) / max(last_month_aov, 1)) * 100
+        context['aov_growth'] = round(aov_growth, 2)
+        context['aov_growth_abs'] = round(abs(aov_growth), 2)
+        
+        # Get revenue data for the last 7 days
+        today = timezone.now().date()
+        revenue_data = []
+        for i in range(6, -1, -1):
+            date = today - timezone.timedelta(days=i)
+            daily_revenue = Revenue.objects.filter(date=date).aggregate(total=Sum('total_revenue'))['total'] or 0
+            revenue_data.append(float(daily_revenue))
+        context['revenue_data'] = revenue_data
+        
+        # Get user activity data for the last 7 days - using last_login
+        user_activity_data = []
+        for i in range(6, -1, -1):
+            date = today - timezone.timedelta(days=i)
+            daily_users = UserProfile.objects.filter(last_login__date=date).count()
+            user_activity_data.append(daily_users)
+        context['user_activity_data'] = user_activity_data
         
         return context
 
@@ -214,3 +260,135 @@ def delete_revenue(request, revenue_id):
         messages.error(request, f'Error deleting revenue record: {str(e)}')
     
     return redirect('dashboard-analytics')
+
+@login_required
+def logistics_dashboard(request):
+    context = TemplateLayout.init({})
+    
+    # Get analytics data
+    active_shipments = Shipment.objects.filter(status__in=['PENDING', 'IN_TRANSIT']).count()
+    total_inventory = Inventory.objects.aggregate(total=Sum('quantity'))['total'] or 0
+    delivery_success_rate = Delivery.objects.filter(status='COMPLETED').count() / max(Delivery.objects.count(), 1) * 100
+    total_revenue = Revenue.objects.aggregate(total=Sum('total_revenue'))['total'] or 0
+
+    # Calculate growth rates
+    last_month = timezone.now().replace(day=1) - timezone.timedelta(days=1)
+    shipment_growth = ((active_shipments - Shipment.objects.filter(created_at__lt=last_month).count()) / max(Shipment.objects.filter(created_at__lt=last_month).count(), 1)) * 100
+    inventory_growth = ((total_inventory - Inventory.objects.filter(created_at__lt=last_month).aggregate(total=Sum('quantity'))['total'] or 0) / max(Inventory.objects.filter(created_at__lt=last_month).aggregate(total=Sum('quantity'))['total'] or 1, 1)) * 100
+    delivery_growth = ((delivery_success_rate - (Delivery.objects.filter(created_at__lt=last_month, status='COMPLETED').count() / max(Delivery.objects.filter(created_at__lt=last_month).count(), 1) * 100)) / max(Delivery.objects.filter(created_at__lt=last_month).count(), 1)) * 100
+    revenue_growth = ((total_revenue - Revenue.objects.filter(date__lt=last_month).aggregate(total=Sum('total_revenue'))['total'] or 0) / max(Revenue.objects.filter(date__lt=last_month).aggregate(total=Sum('total_revenue'))['total'] or 1, 1)) * 100
+
+    # Get data for tables
+    shipments = Shipment.objects.all().order_by('-created_at')
+    inventory = Inventory.objects.all().order_by('-created_at')
+    deliveries = Delivery.objects.all().order_by('-created_at')
+    users = User.objects.all()
+
+    context.update({
+        'active_shipments': active_shipments,
+        'total_inventory': total_inventory,
+        'delivery_success_rate': round(delivery_success_rate, 2),
+        'total_revenue': total_revenue,
+        'shipment_growth': round(shipment_growth, 2),
+        'inventory_growth': round(inventory_growth, 2),
+        'delivery_growth': round(delivery_growth, 2),
+        'revenue_growth': round(revenue_growth, 2),
+        'shipments': shipments,
+        'inventory': inventory,
+        'deliveries': deliveries,
+        'users': users,
+    })
+
+    return render(request, 'dashboard_logistics.html', context)
+
+@login_required
+def add_shipment(request):
+    if request.method == 'POST':
+        try:
+            tracking_id = f"SH{str(uuid.uuid4())[:8].upper()}"
+            customer = User.objects.get(id=request.POST['customer'])
+            shipment = Shipment.objects.create(
+                tracking_id=tracking_id,
+                customer=customer,
+                origin=request.POST['origin'],
+                destination=request.POST['destination'],
+                status=request.POST['status'],
+                estimated_delivery=request.POST['estimated_delivery']
+            )
+            messages.success(request, f'Shipment {tracking_id} created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating shipment: {str(e)}')
+    return redirect('dashboard-logistics')
+
+@login_required
+def add_inventory(request):
+    if request.method == 'POST':
+        try:
+            item_id = f"INV{str(uuid.uuid4())[:8].upper()}"
+            inventory = Inventory.objects.create(
+                item_id=item_id,
+                name=request.POST['name'],
+                category=request.POST['category'],
+                quantity=request.POST['quantity'],
+                location=request.POST['location'],
+                status=request.POST['status']
+            )
+            messages.success(request, f'Inventory item {item_id} created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating inventory item: {str(e)}')
+    return redirect('dashboard-logistics')
+
+@login_required
+def add_delivery(request):
+    if request.method == 'POST':
+        try:
+            delivery_id = f"DEL{str(uuid.uuid4())[:8].upper()}"
+            shipment = Shipment.objects.get(id=request.POST['shipment'])
+            delivery = Delivery.objects.create(
+                delivery_id=delivery_id,
+                shipment=shipment,
+                driver=request.POST['driver'],
+                date=request.POST['date'],
+                status=request.POST['status'],
+                customer_rating=request.POST.get('customer_rating')
+            )
+            messages.success(request, f'Delivery {delivery_id} created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating delivery: {str(e)}')
+    return redirect('dashboard-logistics')
+
+@login_required
+def update_shipment_status(request, shipment_id):
+    if request.method == 'POST':
+        try:
+            shipment = Shipment.objects.get(id=shipment_id)
+            shipment.status = request.POST['status']
+            shipment.save()
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+@login_required
+def update_inventory_status(request, inventory_id):
+    if request.method == 'POST':
+        try:
+            inventory = Inventory.objects.get(id=inventory_id)
+            inventory.status = request.POST['status']
+            inventory.save()
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+@login_required
+def update_delivery_status(request, delivery_id):
+    if request.method == 'POST':
+        try:
+            delivery = Delivery.objects.get(id=delivery_id)
+            delivery.status = request.POST['status']
+            delivery.save()
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})

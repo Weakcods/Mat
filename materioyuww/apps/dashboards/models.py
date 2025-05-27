@@ -48,3 +48,69 @@ class Revenue(models.Model):
 
     def __str__(self):
         return f"Revenue for {self.date} - ${self.total_revenue}"
+
+class Shipment(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('IN_TRANSIT', 'In Transit'),
+        ('DELIVERED', 'Delivered'),
+        ('CANCELLED', 'Cancelled'),
+    ]
+
+    tracking_id = models.CharField(max_length=50, unique=True)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE)
+    origin = models.CharField(max_length=255)
+    destination = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    estimated_delivery = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.tracking_id} - {self.customer.username}"
+
+class Inventory(models.Model):
+    STATUS_CHOICES = [
+        ('IN_STOCK', 'In Stock'),
+        ('LOW_STOCK', 'Low Stock'),
+        ('OUT_OF_STOCK', 'Out of Stock'),
+    ]
+
+    CATEGORY_CHOICES = [
+        ('ELECTRONICS', 'Electronics'),
+        ('CLOTHING', 'Clothing'),
+        ('FOOD', 'Food'),
+        ('OTHER', 'Other'),
+    ]
+
+    item_id = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    quantity = models.IntegerField()
+    location = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='IN_STOCK')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.item_id} - {self.name}"
+
+class Delivery(models.Model):
+    STATUS_CHOICES = [
+        ('SCHEDULED', 'Scheduled'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('COMPLETED', 'Completed'),
+        ('FAILED', 'Failed'),
+    ]
+
+    delivery_id = models.CharField(max_length=50, unique=True)
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE)
+    driver = models.CharField(max_length=255)
+    date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='SCHEDULED')
+    customer_rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)], null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.delivery_id} - {self.shipment.tracking_id}"

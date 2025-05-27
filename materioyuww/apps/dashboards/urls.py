@@ -10,6 +10,13 @@ from .views import (
     delete_user,
     edit_revenue,
     delete_revenue,
+    logistics_dashboard,
+    add_shipment,
+    add_inventory,
+    add_delivery,
+    update_shipment_status,
+    update_inventory_status,
+    update_delivery_status,
 )
 
 urlpatterns = [
@@ -30,7 +37,7 @@ urlpatterns = [
     ),
     path(
         "logistics/",
-        DashboardsView.as_view(template_name="dashboard_logistics.html"),
+        logistics_dashboard,
         name="dashboard-logistics",
     ),
     path(
@@ -55,4 +62,11 @@ urlpatterns = [
     path("revenue/add/", add_revenue, name="add-revenue"),
     path("revenue/<int:revenue_id>/edit/", edit_revenue, name="edit-revenue"),
     path("revenue/<int:revenue_id>/delete/", delete_revenue, name="delete-revenue"),
+    # Logistics URLs
+    path("logistics/add-shipment/", add_shipment, name="add-shipment"),
+    path("logistics/add-inventory/", add_inventory, name="add-inventory"),
+    path("logistics/add-delivery/", add_delivery, name="add-delivery"),
+    path("logistics/update-shipment-status/<int:shipment_id>/", update_shipment_status, name="update-shipment-status"),
+    path("logistics/update-inventory-status/<int:inventory_id>/", update_inventory_status, name="update-inventory-status"),
+    path("logistics/update-delivery-status/<int:delivery_id>/", update_delivery_status, name="update-delivery-status"),
 ]

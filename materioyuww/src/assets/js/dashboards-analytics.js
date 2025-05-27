@@ -444,3 +444,300 @@
     sessionsColumnChart.render();
   }
 })();
+
+// Initialize DataTables
+$(function () {
+  // Initialize all DataTables
+  const tables = ['#ordersTable', '#usersTable', '#revenueTable'];
+  tables.forEach(table => {
+    $(table).DataTable({
+      responsive: true,
+      order: [[0, 'desc']],
+      dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+      language: {
+        sLengthMenu: '_MENU_',
+        search: 'Search',
+        searchPlaceholder: 'Search..'
+      },
+      buttons: [
+        {
+          extend: 'collection',
+          className: 'btn btn-label-secondary dropdown-toggle me-2',
+          text: '<i class="bx bx-export me-sm-1"></i> <span class="d-none d-sm-inline-block">Export</span>',
+          buttons: [
+            {
+              extend: 'print',
+              text: '<i class="bx bx-printer me-2" ></i>Print',
+              className: 'dropdown-item',
+              exportOptions: { columns: [0, 1, 2, 3, 4] },
+              customize: function (win) {
+                $(win.document.body).css('font-size', '10pt');
+                $(win.document.body).find('table').addClass('compact').css('font-size', 'inherit');
+              }
+            },
+            {
+              extend: 'csv',
+              text: '<i class="bx bx-file me-2" ></i>Csv',
+              className: 'dropdown-item',
+              exportOptions: { columns: [0, 1, 2, 3, 4] }
+            },
+            {
+              extend: 'excel',
+              text: '<i class="bx bxs-file me-2" ></i>Excel',
+              className: 'dropdown-item',
+              exportOptions: { columns: [0, 1, 2, 3, 4] }
+            },
+            {
+              extend: 'pdf',
+              text: '<i class="bx bxs-file-pdf me-2" ></i>Pdf',
+              className: 'dropdown-item',
+              exportOptions: { columns: [0, 1, 2, 3, 4] }
+            }
+          ]
+        }
+      ]
+    });
+  });
+});
+
+// Initialize Revenue Chart
+const revenueChartEl = document.querySelector('#revenueChart');
+if (revenueChartEl) {
+  const revenueData = JSON.parse(document.getElementById('revenueData').textContent);
+  const revenueChart = new ApexCharts(revenueChartEl, {
+    series: [{
+      name: 'Revenue',
+      data: revenueData
+    }],
+    chart: {
+      height: 400,
+      type: 'area',
+      toolbar: {
+        show: false
+      }
+    },
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 2
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 0.8,
+        opacityFrom: 0.7,
+        opacityTo: 0.2,
+        stops: [0, 90, 100]
+      }
+    },
+    colors: ['#696cff'],
+    xaxis: {
+      categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      },
+      labels: {
+        style: {
+          fontSize: '13px',
+          colors: '#a3a4cc'
+        }
+      }
+    },
+    yaxis: {
+      labels: {
+        formatter: function (value) {
+          return '$' + value.toLocaleString();
+        },
+        style: {
+          fontSize: '13px',
+          colors: '#a3a4cc'
+        }
+      }
+    },
+    grid: {
+      borderColor: '#f5f5f5',
+      padding: {
+        top: -15,
+        bottom: -10
+      }
+    },
+    tooltip: {
+      theme: 'dark',
+      y: {
+        formatter: function (value) {
+          return '$' + value.toLocaleString();
+        }
+      }
+    }
+  });
+  revenueChart.render();
+}
+
+// Initialize User Activity Chart
+const userActivityChartEl = document.querySelector('#userActivityChart');
+if (userActivityChartEl) {
+  const userActivityData = JSON.parse(document.getElementById('userActivityData').textContent);
+  const userActivityChart = new ApexCharts(userActivityChartEl, {
+    series: [{
+      name: 'Active Users',
+      data: userActivityData
+    }],
+    chart: {
+      height: 400,
+      type: 'bar',
+      toolbar: {
+        show: false
+      }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 10,
+        dataLabels: {
+          position: 'top'
+        }
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return val;
+      },
+      offsetY: -20,
+      style: {
+        fontSize: '12px',
+        colors: ['#a3a4cc']
+      }
+    },
+    colors: ['#71dd37'],
+    xaxis: {
+      categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      position: 'bottom',
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      },
+      labels: {
+        style: {
+          fontSize: '13px',
+          colors: '#a3a4cc'
+        }
+      }
+    },
+    yaxis: {
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      },
+      labels: {
+        show: false
+      }
+    },
+    grid: {
+      borderColor: '#f5f5f5',
+      padding: {
+        top: -15,
+        bottom: -10
+      }
+    },
+    tooltip: {
+      theme: 'dark'
+    }
+  });
+  userActivityChart.render();
+}
+
+// Initialize Tooltips
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+// Form Validation
+(function () {
+  'use strict';
+
+  // Fetch all forms we want to apply validation to
+  const forms = document.querySelectorAll('.needs-validation');
+
+  // Loop over them and prevent submission
+  Array.prototype.slice.call(forms).forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      form.classList.add('was-validated');
+    }, false);
+  });
+})();
+
+// Status Update Handlers
+function updateStatus(url, id, status) {
+  $.ajax({
+    url: url,
+    type: 'POST',
+    data: {
+      'status': status,
+      'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+    },
+    success: function(response) {
+      if (response.status === 'success') {
+        // Show success toast
+        toastr.success('Status updated successfully');
+        // Reload the page to reflect changes
+        setTimeout(function() {
+          window.location.reload();
+        }, 1000);
+      } else {
+        toastr.error('Error updating status');
+      }
+    },
+    error: function() {
+      toastr.error('Error updating status');
+    }
+  });
+}
+
+// Delete Handlers
+function deleteItem(url, id) {
+  if (confirm('Are you sure you want to delete this item?')) {
+    $.ajax({
+      url: url,
+      type: 'POST',
+      data: {
+        'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+      },
+      success: function(response) {
+        if (response.status === 'success') {
+          toastr.success('Item deleted successfully');
+          setTimeout(function() {
+            window.location.reload();
+          }, 1000);
+        } else {
+          toastr.error('Error deleting item');
+        }
+      },
+      error: function() {
+        toastr.error('Error deleting item');
+      }
+    });
+  }
+}
+
+// Initialize Toastr
+toastr.options = {
+  closeButton: true,
+  progressBar: true,
+  positionClass: 'toast-top-right',
+  timeOut: 3000
+};

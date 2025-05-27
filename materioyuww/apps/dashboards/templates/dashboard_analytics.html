@@ -26,6 +26,10 @@
 {% endblock page_js %}
 
 {% block content %}
+<!-- Chart Data -->
+<script type="application/json" id="revenueData">{{ revenue_data|safe }}</script>
+<script type="application/json" id="userActivityData">{{ user_activity_data|safe }}</script>
+
 <!-- Welcome Section -->
 <div class="row mb-4">
   <div class="col-12">
@@ -40,15 +44,15 @@
 
 <!-- Quick Stats -->
 <div class="row mb-4">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <h6 class="card-title mb-1">Total Revenue</h6>
             <h4 class="mb-0">${{ total_revenue|floatformat:2 }}</h4>
-            <small class="text-success">
-              <i class="bx bx-up-arrow-alt"></i> +{{ revenue_growth }}% from last month
+            <small class="text-{% if revenue_growth >= 0 %}success{% else %}danger{% endif %}">
+              <i class="bx bx-{% if revenue_growth >= 0 %}up-arrow-alt{% else %}down-arrow-alt{% endif %}"></i> {{ revenue_growth_abs }}% from last month
             </small>
           </div>
           <div class="avatar">
@@ -60,15 +64,15 @@
       </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <h6 class="card-title mb-1">Active Users</h6>
             <h4 class="mb-0">{{ active_users }}</h4>
-            <small class="text-success">
-              <i class="bx bx-up-arrow-alt"></i> +{{ user_growth }}% from last month
+            <small class="text-{% if user_growth >= 0 %}success{% else %}danger{% endif %}">
+              <i class="bx bx-{% if user_growth >= 0 %}up-arrow-alt{% else %}down-arrow-alt{% endif %}"></i> {{ user_growth_abs }}% from last month
             </small>
           </div>
           <div class="avatar">
@@ -80,23 +84,80 @@
       </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <h6 class="card-title mb-1">Total Orders</h6>
             <h4 class="mb-0">{{ total_orders }}</h4>
-            <small class="text-success">
-              <i class="bx bx-up-arrow-alt"></i> +{{ order_growth }}% from last month
+            <small class="text-{% if order_growth >= 0 %}success{% else %}danger{% endif %}">
+              <i class="bx bx-{% if order_growth >= 0 %}up-arrow-alt{% else %}down-arrow-alt{% endif %}"></i> {{ order_growth_abs }}% from last month
             </small>
           </div>
           <div class="avatar">
             <span class="avatar-initial rounded bg-label-warning">
-              <i class="bx bx-shopping-bag"></i>
+              <i class="bx bx-cart"></i>
             </span>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Average Order Value</h6>
+            <h4 class="mb-0">${{ average_order_value|floatformat:2 }}</h4>
+            <small class="text-{% if aov_growth >= 0 %}success{% else %}danger{% endif %}">
+              <i class="bx bx-{% if aov_growth >= 0 %}up-arrow-alt{% else %}down-arrow-alt{% endif %}"></i> {{ aov_growth_abs }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-info">
+              <i class="bx bx-trending-up"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+  <!-- Revenue Chart -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Revenue Overview</h5>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            Last 7 Days
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#">Last 7 Days</a></li>
+            <li><a class="dropdown-item" href="#">Last 30 Days</a></li>
+            <li><a class="dropdown-item" href="#">Last 90 Days</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="revenueChart"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- User Activity Chart -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">User Activity</h5>
+      </div>
+      <div class="card-body">
+        <div id="userActivityChart"></div>
       </div>
     </div>
   </div>
@@ -128,7 +189,7 @@
           <tr>
             <td>{{ order.order_number }}</td>
             <td>{{ order.customer.username }}</td>
-            <td>${{ order.amount }}</td>
+            <td>${{ order.amount|floatformat:2 }}</td>
             <td>
               <span class="badge bg-label-{{ order.status|lower }}">
                 {{ order.status }}
@@ -168,6 +229,7 @@
           <tr>
             <th>Username</th>
             <th>Email</th>
+            <th>Phone</th>
             <th>Status</th>
             <th>Total Orders</th>
             <th>Total Spent</th>
@@ -179,6 +241,7 @@
           <tr>
             <td>{{ user.username }}</td>
             <td>{{ user.email }}</td>
+            <td>{{ user.profile.phone }}</td>
             <td>
               <span class="badge bg-label-{{ user.profile.is_active|yesno:'success,danger' }}">
                 {{ user.profile.is_active|yesno:'Active,Inactive' }}
@@ -209,7 +272,7 @@
   <div class="card-header d-flex justify-content-between align-items-center">
     <h5 class="card-title mb-0">Revenue Management</h5>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRevenueModal">
-      <i class="bx bx-plus"></i> Add Revenue
+      <i class="bx bx-plus"></i> Add Revenue Record
     </button>
   </div>
   <div class="card-body">
@@ -278,10 +341,10 @@
               <label class="form-label" for="status">Status</label>
               <select class="form-select" id="status" name="status" required>
                 <option value="">Select Status</option>
-                <option value="PENDING">Pending</option>
-                <option value="PROCESSING">Processing</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
             <div class="col-12 mb-3">
@@ -325,7 +388,7 @@
             </div>
             <div class="col-12 mb-3">
               <label class="form-label" for="address">Address</label>
-              <textarea class="form-control" id="address" name="address" rows="2"></textarea>
+              <textarea class="form-control" id="address" name="address" rows="3"></textarea>
             </div>
             <div class="col-12 mb-3">
               <div class="form-check form-switch">
@@ -382,4 +445,4 @@
     </div>
   </div>
 </div>
-{% endblock %}
+{% endblock content %}
