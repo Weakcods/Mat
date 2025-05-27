@@ -1,0 +1,154 @@
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+  <!-- ! Hide app brand if navbar-full -->
+  {% if not navbar_full %}
+  <div class="app-brand demo">
+    <a href="{% url 'index' %}" class="app-brand-link">
+      <span class="app-brand-logo demo me-1">
+        {% include 'partials/logo.html' %}
+      </span>
+      <span class="app-brand-text demo menu-text fw-semibold ms-2">{% get_theme_variables 'template_name' %}</span>
+    </a>
+
+    <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
+      <i class="menu-toggle-icon d-xl-block align-middle"></i>
+    </a>
+  </div>
+  {% endif %}
+
+
+  <div class="menu-inner-shadow"></div>
+
+  <ul class="menu-inner py-1">
+
+    <li class="menu-item {% if 'index' == request.resolver_match.url_name or '/dashbord/' in request.path %}active open{% endif %}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
+        <i class="menu-icon tf-icons ri-home-smile-line"></i>
+        <div class="text-truncate" data-i18n="Dashboards">Dashboards</div>
+        <span class="badge bg-danger rounded-pill ms-auto">5</span>
+      </a>
+      <ul class="menu-sub">
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}dashboard/crm/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="CRM">CRM</div>
+          </a>
+        </li>
+        <li class="menu-item {% if 'index' == request.resolver_match.url_name %}active{% endif %}">
+          <a href="{% url 'index' %}" class="menu-link">
+            <div class="text-truncate" data-i18n="Analytics">Analytics</div>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}app/ecommerce/dashboard/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="eCommerce">eCommerce</div>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}app/logistics/dashboard/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Logistics">Logistics</div>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}app/academy/dashboard/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Academy">Academy</div>
+          </a>
+        </li>
+      </ul>
+    </li>
+    
+    <!-- Front Pages -->
+    <li class="menu-item">
+      <ul class="menu-sub">
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}front/landing/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Landing">Landing</div>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}front/pricing/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Pricing">Pricing</div>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}front/payment/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Payment">Payment</div>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}front/checkout/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Checkout">Checkout</div>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="{% get_theme_variables 'live_preview' %}front/help_center/" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Help Center">Help Center</div>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <li class="menu-item">
+      <a href="{% get_theme_variables 'live_preview' %}transactions/list/" class="menu-link" target="_blank">
+        <i class="menu-icon tf-icons ri-database-2-line"></i>
+        <div class="text-truncate" data-i18n="Transactions (CRUD)">Transactions (CRUD)</div>
+      </a>
+    </li>
+
+    <li class="menu-header fw-medium mt-7">
+      <span class="menu-header-text">Apps &amp; Pages</span>
+    </li>
+
+    
+    <!-- Account -->
+    <li class="menu-item {% if '/account_settings/' in request.path %}active open{% endif %}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
+        <i class="menu-icon tf-icons ri-user-line"></i>
+        <div class="text-truncate" data-i18n="Account Settings">Account Settings</div>
+      </a>
+      <ul class="menu-sub">
+        <li class="menu-item {% if '/account/' in request.path %}active{% endif %}">
+          <a href="{% url 'pages-account-settings-account' %}" class="menu-link">
+            <div class="text-truncate" data-i18n="Account">Account</div>
+          </a>
+        </li>
+        <li class="menu-item {% if '/notifications/' in request.path %}active{% endif %}">
+          <a href="{% url 'pages-account-settings-notifications' %}" class="menu-link">
+            <div class="text-truncate" data-i18n="Notifications">Notifications</div>
+          </a>
+        </li>
+        <li class="menu-item {% if '/connections/' in request.path %}active{% endif %}">
+          <a href="{% url 'pages-account-settings-connections' %}" class="menu-link">
+            <div class="text-truncate" data-i18n="Connections">Connections</div>
+          </a>
+        </li>
+      </ul>
+    </li>
+    <!-- Auth -->
+    <li class="menu-item {% if '/auth/' in request.path %}active open{% endif %}">
+      <a href="javascript:void(0);" class="menu-link menu-toggle">
+        <i class="menu-icon tf-icons ri-shield-keyhole-line"></i>
+        <div class="text-truncate" data-i18n="Authentications">Authentications</div>
+      </a>
+      <ul class="menu-sub">
+        <li class="menu-item {% if '/login/' in request.path %}active{% endif %}">
+          <a href="{% url 'auth-login-basic' %}" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Login">Login</div>
+          </a>
+        </li>
+        <li class="menu-item {% if '/register/' in request.path %}active{% endif %}">
+          <a href="{% url 'auth-register-basic' %}" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Register">Register</div>
+          </a>
+        </li>
+        <li class="menu-item {% if '/forgot_password/' in request.path %}active{% endif %}">
+          <a href="{% url 'auth-forgot-password-basic' %}" class="menu-link" target="_blank">
+            <div class="text-truncate" data-i18n="Frogot Password">Frogot Password</div>
+          </a>
+        </li>
+      </ul>
+    </li>
+    
+
+  </ul>
+
+
+</aside>
