@@ -8,11 +8,15 @@
 {% block vendor_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
 {% endblock vendor_css %}
 
 {% block vendor_js %}
 {{ block.super }}
 <script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 {% endblock vendor_js %}
 
 {% block page_js %}
@@ -21,14 +25,295 @@
 {% endblock page_js %}
 
 {% block content %}
-<div class="row">
+<!-- Welcome Section -->
+<div class="row mb-4">
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="card-title">CRM Dashboard</h4>
-        <p class="card-text">Coming soon...</p>
+        <h4 class="card-title mb-1">CRM Overview</h4>
+        <p class="mb-4">Manage your customer relationships and track interactions.</p>
       </div>
     </div>
   </div>
 </div>
-{% endblock %} 
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Total Customers</h6>
+            <h4 class="mb-0">{{ total_customers }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ customer_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-primary">
+              <i class="bx bx-user"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Active Leads</h6>
+            <h4 class="mb-0">{{ active_leads }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ lead_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-success">
+              <i class="bx bx-target-lock"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Conversion Rate</h6>
+            <h4 class="mb-0">{{ conversion_rate }}%</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ conversion_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-warning">
+              <i class="bx bx-line-chart"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Total Revenue</h6>
+            <h4 class="mb-0">${{ total_revenue|floatformat:2 }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ revenue_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-info">
+              <i class="bx bx-dollar"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Management -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">Customer Management</h5>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+      <i class="bx bx-plus"></i> Add Customer
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover" id="customersTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Last Contact</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+          <tr>
+            <td>{{ customer.id }}</td>
+            <td>{{ customer.name }}</td>
+            <td>{{ customer.email }}</td>
+            <td>{{ customer.phone }}</td>
+            <td>
+              <span class="badge bg-label-{{ customer.status|lower }}">
+                {{ customer.status }}
+              </span>
+            </td>
+            <td>{{ customer.last_contact|date:"M d, Y" }}</td>
+            <td>
+              <div class="d-inline-block">
+                <button class="btn btn-sm btn-icon" onclick="viewCustomer({{ customer.id }})" data-bs-toggle="tooltip" title="View">
+                  <i class="bx bx-show"></i>
+                </button>
+                <button class="btn btn-sm btn-icon" onclick="editCustomer({{ customer.id }})" data-bs-toggle="tooltip" title="Edit">
+                  <i class="bx bx-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-icon" onclick="deleteCustomer({{ customer.id }})" data-bs-toggle="tooltip" title="Delete">
+                  <i class="bx bx-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Customer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="addCustomerForm" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="form-label" for="name">Full Name</label>
+              <input type="text" class="form-control" id="name" name="name" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="email">Email</label>
+              <input type="email" class="form-control" id="email" name="email" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="phone">Phone</label>
+              <input type="tel" class="form-control" id="phone" name="phone" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="status">Status</label>
+              <select class="form-select" id="status" name="status" required>
+                <option value="">Select Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="LEAD">Lead</option>
+              </select>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="notes">Notes</label>
+              <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Save Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Customer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="editCustomerForm" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <input type="hidden" id="editCustomerId" name="id">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editName">Full Name</label>
+              <input type="text" class="form-control" id="editName" name="name" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editEmail">Email</label>
+              <input type="email" class="form-control" id="editEmail" name="email" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editPhone">Phone</label>
+              <input type="tel" class="form-control" id="editPhone" name="phone" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editStatus">Status</label>
+              <select class="form-select" id="editStatus" name="status" required>
+                <option value="">Select Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="LEAD">Lead</option>
+              </select>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editNotes">Notes</label>
+              <textarea class="form-control" id="editNotes" name="notes" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Update Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- View Customer Modal -->
+<div class="modal fade" id="viewCustomerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Customer Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-12 mb-3">
+            <h6>Full Name</h6>
+            <p id="viewName"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Email</h6>
+            <p id="viewEmail"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Phone</h6>
+            <p id="viewPhone"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Status</h6>
+            <p id="viewStatus"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Notes</h6>
+            <p id="viewNotes"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Last Contact</h6>
+            <p id="viewLastContact"></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %} 

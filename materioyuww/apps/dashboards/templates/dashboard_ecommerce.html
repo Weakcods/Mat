@@ -8,11 +8,15 @@
 {% block vendor_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'vendor/libs/apex-charts/apex-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-bs5/datatables.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.css' %}" />
 {% endblock vendor_css %}
 
 {% block vendor_js %}
 {{ block.super }}
 <script src="{% static 'vendor/libs/apex-charts/apexcharts.js' %}"></script>
+<script src="{% static 'vendor/libs/datatables-bs5/datatables-bootstrap5.js' %}"></script>
 {% endblock vendor_js %}
 
 {% block page_js %}
@@ -21,14 +25,331 @@
 {% endblock page_js %}
 
 {% block content %}
-<div class="row">
+<!-- Welcome Section -->
+<div class="row mb-4">
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h4 class="card-title">eCommerce Dashboard</h4>
-        <p class="card-text">Coming soon...</p>
+        <h4 class="card-title mb-1">eCommerce Overview</h4>
+        <p class="mb-4">Manage your products, track sales, and monitor inventory.</p>
       </div>
     </div>
   </div>
 </div>
-{% endblock %} 
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Total Sales</h6>
+            <h4 class="mb-0">${{ total_sales|floatformat:2 }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ sales_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-primary">
+              <i class="bx bx-dollar"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Total Orders</h6>
+            <h4 class="mb-0">{{ total_orders }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ orders_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-success">
+              <i class="bx bx-shopping-bag"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Total Products</h6>
+            <h4 class="mb-0">{{ total_products }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ products_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-warning">
+              <i class="bx bx-package"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="card-title mb-1">Total Customers</h6>
+            <h4 class="mb-0">{{ total_customers }}</h4>
+            <small class="text-success">
+              <i class="bx bx-up-arrow-alt"></i> +{{ customers_growth }}% from last month
+            </small>
+          </div>
+          <div class="avatar">
+            <span class="avatar-initial rounded bg-label-info">
+              <i class="bx bx-user"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Product Management -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">Product Management</h5>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+      <i class="bx bx-plus"></i> Add Product
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover" id="productsTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in products %}
+          <tr>
+            <td>{{ product.id }}</td>
+            <td>
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" class="rounded" width="40" height="40">
+            </td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.category }}</td>
+            <td>${{ product.price|floatformat:2 }}</td>
+            <td>{{ product.stock }}</td>
+            <td>
+              <span class="badge bg-label-{{ product.status|lower }}">
+                {{ product.status }}
+              </span>
+            </td>
+            <td>
+              <div class="d-inline-block">
+                <button class="btn btn-sm btn-icon" onclick="viewProduct({{ product.id }})" data-bs-toggle="tooltip" title="View">
+                  <i class="bx bx-show"></i>
+                </button>
+                <button class="btn btn-sm btn-icon" onclick="editProduct({{ product.id }})" data-bs-toggle="tooltip" title="Edit">
+                  <i class="bx bx-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-icon" onclick="deleteProduct({{ product.id }})" data-bs-toggle="tooltip" title="Delete">
+                  <i class="bx bx-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Product</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="addProductForm" class="needs-validation" novalidate enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="form-label" for="name">Product Name</label>
+              <input type="text" class="form-control" id="name" name="name" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="category">Category</label>
+              <select class="form-select" id="category" name="category" required>
+                <option value="">Select Category</option>
+                <option value="ELECTRONICS">Electronics</option>
+                <option value="CLOTHING">Clothing</option>
+                <option value="FOOD">Food</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="price">Price</label>
+              <input type="number" class="form-control" id="price" name="price" step="0.01" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="stock">Stock</label>
+              <input type="number" class="form-control" id="stock" name="stock" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="status">Status</label>
+              <select class="form-select" id="status" name="status" required>
+                <option value="">Select Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="OUT_OF_STOCK">Out of Stock</option>
+              </select>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="image">Product Image</label>
+              <input type="file" class="form-control" id="image" name="image" accept="image/*" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="description">Description</label>
+              <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Product</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="editProductForm" class="needs-validation" novalidate enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" id="editProductId" name="id">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editName">Product Name</label>
+              <input type="text" class="form-control" id="editName" name="name" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editCategory">Category</label>
+              <select class="form-select" id="editCategory" name="category" required>
+                <option value="">Select Category</option>
+                <option value="ELECTRONICS">Electronics</option>
+                <option value="CLOTHING">Clothing</option>
+                <option value="FOOD">Food</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editPrice">Price</label>
+              <input type="number" class="form-control" id="editPrice" name="price" step="0.01" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editStock">Stock</label>
+              <input type="number" class="form-control" id="editStock" name="stock" required />
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editStatus">Status</label>
+              <select class="form-select" id="editStatus" name="status" required>
+                <option value="">Select Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="OUT_OF_STOCK">Out of Stock</option>
+              </select>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editImage">Product Image</label>
+              <input type="file" class="form-control" id="editImage" name="image" accept="image/*" />
+              <small class="text-muted">Leave empty to keep current image</small>
+            </div>
+            <div class="col-12 mb-3">
+              <label class="form-label" for="editDescription">Description</label>
+              <textarea class="form-control" id="editDescription" name="description" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Update Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- View Product Modal -->
+<div class="modal fade" id="viewProductModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Product Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-12 mb-3 text-center">
+            <img id="viewImage" src="" alt="Product Image" class="img-fluid rounded" style="max-height: 200px;">
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Product Name</h6>
+            <p id="viewName"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Category</h6>
+            <p id="viewCategory"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Price</h6>
+            <p id="viewPrice"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Stock</h6>
+            <p id="viewStock"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Status</h6>
+            <p id="viewStatus"></p>
+          </div>
+          <div class="col-12 mb-3">
+            <h6>Description</h6>
+            <p id="viewDescription"></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %} 
